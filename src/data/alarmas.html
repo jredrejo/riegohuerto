@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+    <head><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+        <meta charset="UTF-8">";
+        <title>Nodo riego Huerto El Olivo</title>
+        <style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}
+        body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;}
+        p {font-size: 24px;color: #444444;margin-bottom: 10px;}
+        </style>
+    </head>
+    <body>
+        <h1>Nodo Huerto El Olivo</h1>
+
+        <form action="/SetHoras" method="post">
+            <h2>Periodos de riego (necesita PIN):
+                <select name="cantidad" id="cantidad">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+            </h2>
+            <div>
+            PIN: <input type="password" name="pin" value="0000">
+            </div>
+            <fieldset>
+                <legend>Riego 1</legend>
+                <div>
+                    Hora inicio:
+                    <input type="time" name="encender1">
+                </div>
+                <div>
+                    Hora fin:
+                    <input type="time" name="apagar1">
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>Riego 2</legend>
+                <div>
+                    Hora inicio:
+                    <input type="time" name="encender2">
+                </div>
+                <div>
+                    Hora fin:
+                    <input type="time" name="apagar2">
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>Riego 3</legend>
+                <div>
+                    Hora inicio:
+                    <input type="time" name="encender3">
+                </div>
+                <div>
+                    Hora fin:
+                    <input type="time" name="apagar3">
+                </div>
+            </fieldset>
+        <button type="submit">Enviar</button>
+        </form>
+</body>
+</html>
