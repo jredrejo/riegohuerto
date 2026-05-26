@@ -14,8 +14,8 @@ byte horaApagar[5];
 byte minutoApagar[5]; 
 
 
-// pin electroválvula huerto
-const int HUERTO_PIN = D1;
+// pin electroválvula huerto (GPIO5 en ESP32 NodeMCU; HIGH al arranque -> relé cerrado)
+const int HUERTO_PIN = 5;
 
 // Cada cuando se envían los datos a la nube
 unsigned long intervalo = 30000; // 30 seg

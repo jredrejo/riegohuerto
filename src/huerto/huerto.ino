@@ -12,8 +12,9 @@
 #include <DHT.h>
 #include <DHT_U.h>
 
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
+#include <WiFi.h>
+#include <WebServer.h>
+#include <SPIFFS.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
@@ -29,7 +30,7 @@ char msg[50];
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org");
 
-ESP8266WebServer server(80);
+WebServer server(80);
 
 
 unsigned long tiempoInicial;
