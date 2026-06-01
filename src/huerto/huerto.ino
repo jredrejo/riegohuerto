@@ -14,7 +14,7 @@
 
 #include <WiFi.h>
 #include <WebServer.h>
-#include <SPIFFS.h>
+#include <LittleFS.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
@@ -44,6 +44,7 @@ bool timeBetween(String curtime, String starttime, String endtime) {
 void leerEEPROM() {
   EEPROM.begin(21);
   numAlarms = EEPROM.read(0);
+  if (numAlarms > 5) numAlarms = 0;
   for (int i = 1; i <= 5; i++) {
     horaEncender[ i - 1] = EEPROM.read(i * 2 - 1);
     minutoEncender[i - 1] = EEPROM.read(i * 2);
@@ -127,13 +128,13 @@ void setup() {
 
   Serial.println("Conectando ");
 
-  if (SPIFFS.begin())
+  if (LittleFS.begin())
   {
-    Serial.println("SPIFFS Initialize....ok");
+    Serial.println("LittleFS Initialize....ok");
   }
   else
   {
-    Serial.println("SPIFFS Initialization...failed");
+    Serial.println("LittleFS Initialization...failed");
   }
 
   WiFi.begin(ssid, password);
@@ -336,7 +337,7 @@ bool loadFromSpiffs(String path) {
   else if (path.endsWith(".xml")) dataType = "text/xml";
   else if (path.endsWith(".pdf")) dataType = "application/pdf";
   else if (path.endsWith(".zip")) dataType = "application/zip";
-  File dataFile = SPIFFS.open(path.c_str(), "r");
+  File dataFile = LittleFS.open(path.c_str(), "r");
   if (server.hasArg("download")) dataType = "application/octet-stream";
   if (server.streamFile(dataFile, dataType) != dataFile.size()) {
   }

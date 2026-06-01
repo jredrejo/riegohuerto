@@ -10,11 +10,11 @@ Sistema de riego para el huerto usando **ESP32 NodeMCU** y MQTT.
 
 ### Conexionado
 
-| Señal              | Pin ESP32        | Destino                       |
-|--------------------|------------------|-------------------------------|
-| Relé huerto (IN1)  | **GPIO5**        | Entrada IN1 del módulo relé   |
-| VCC relé           | 5V (Vin)         | VCC módulo relé               |
-| GND                | GND              | GND módulo relé               |
+| Señal             | Pin ESP32 | Destino                     |
+| ----------------- | --------- | --------------------------- |
+| Relé huerto (IN1) | **GPIO5** | Entrada IN1 del módulo relé |
+| VCC relé          | 5V (Vin)  | VCC módulo relé             |
+| GND               | GND       | GND módulo relé             |
 
 El relé se mantiene desactivado a `HIGH` (estado por defecto al arranque de GPIO5) y se activa a `LOW`.
 
@@ -38,6 +38,4 @@ y las siguientes librerías:
 - `DHT sensor library`
 - `PubSubClient` (sólo si se usa MQTT)
 
-Para subir los ficheros de `src/data/` al sistema de ficheros SPIFFS del ESP32 se debe
-usar el plugin **arduino-esp32 filesystem uploader** (no el `ESP8266FS-0.5.0.zip`
-que estaba pensado para la placa anterior).
+Para subir los ficheros de `src/huerto data/` al sistema de ficheros LittleFS del ESP32 se debe usar el plugin [LittleFS]([GitHub - earlephilhower/arduino-littlefs-upload: Build and uploads LittleFS filesystems for the Arduino-Pico RP2040, RP2350, ESP8266, and ESP32 cores under Arduino IDE 2.2.1 or higher · GitHub](https://github.com/earlephilhower/arduino-littlefs-upload)) (no el `ESP8266FS-0.5.0.zip` que estaba pensado para la placa anterior).

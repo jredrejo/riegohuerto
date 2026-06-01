@@ -15,7 +15,9 @@ byte minutoApagar[5];
 
 
 // pin electroválvula huerto (GPIO5 en ESP32 NodeMCU; HIGH al arranque -> relé cerrado)
-const int HUERTO_PIN = 5;
+// recomendado usar GPIO16 Y GPIO17. Corresponden a 
+// G16 y G17 en la serigrafía
+const int HUERTO_PIN = 16;
 
 // Cada cuando se envían los datos a la nube
 unsigned long intervalo = 30000; // 30 seg
