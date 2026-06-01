@@ -178,12 +178,12 @@ void setup() {
 void handle_AbrirRiego()
 {
   abreHuerto();
-  server.send(200, "text/plain", "Riego Abierto");
+  server.send(200, "text/html", "<html><body><h2>Riego Abierto</h2><p><a href=\"/\">Volver a la p&aacute;gina principal</a></p></body></html>");
 }
 void handle_CerrarRiego()
 {
   cierraHuerto();
-  server.send(200, "text/plain", "Riego Cerrado");
+  server.send(200, "text/html", "<html><body><h2>Riego Cerrado</h2><p><a href=\"/\">Volver a la p&aacute;gina principal</a></p></body></html>");
 }
 
 void handle_Parametros()
@@ -277,10 +277,12 @@ void handle_OnConnect()
   ptr += "</head>\n";
   ptr += "<body>\n";
   ptr += "<h1>Nodo Huerto El Olivo</h1>\n";
-  ptr += "<div>\n";  
+  ptr += "<div>\n";
   ptr += "<h3>" +  timeClient.getFormattedTime() + "</h3>\n";
-  ptr += "<hr/>\n";  
-  ptr += "<div>\n"; 
+  ptr += "<hr/>\n";
+  String estadoRiego = (digitalRead(HUERTO_PIN) == LOW) ? "Riego Abierto" : "Riego Cerrado";
+  ptr += "<h2>" + estadoRiego + "</h2>\n";
+  ptr += "<div>\n";
   ptr += "<h2>Periodos de riego activos</h2>\n";
   
   ptr += "<table>\n"; 
@@ -293,6 +295,7 @@ void handle_OnConnect()
   ptr += "<br/><br/>\n";
   ptr += "<a href=\"/alarmas.html\">Cambiar periodos de riego</a>";
   ptr += "</div>\n";
+  ptr += "<br/><br/><br/>\n";
 
   ptr += "<form action=\"/AbrirRiego\" method=\"get\">";
   ptr += "<button type=\"submit\">Abrir riego</button>";
