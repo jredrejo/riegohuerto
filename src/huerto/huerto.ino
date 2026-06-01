@@ -122,7 +122,7 @@ void crearAlarmas() {
 void setup() {
   pinMode(HUERTO_PIN, OUTPUT);
   cierraHuerto();
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   Serial.println("Conectando ");
 
@@ -189,15 +189,12 @@ void handle_Parametros()
   String encender;
   String apagar;
 
-  if (server.hasArg("plain") == false) { //Check if body received
+  if (!server.hasArg("cantidad") || !server.hasArg("pin")) {
 
     server.send(200, "text/plain", "No se ha recibido nada");
     return;
 
   }
-
-  Serial.println("post:");
-  Serial.println(server.arg("plain"));
 
   // mostrar por puerto serie
   Serial.println(server.argName(0));
@@ -212,43 +209,43 @@ void handle_Parametros()
 
   encender = server.arg(String("encender1"));
   apagar = server.arg(String("apagar1"));
-  horaEncender[0] = (byte)encender.substring(0, 3).toInt();
+  horaEncender[0] = (byte)encender.substring(0, 2).toInt();
   minutoEncender[0] = (byte)encender.substring(encender.length() - 2).toInt();
-  horaApagar[0] = (byte)apagar.substring(0, 3).toInt();
+  horaApagar[0] = (byte)apagar.substring(0, 2).toInt();
   minutoApagar[0] = (byte)apagar.substring(apagar.length() - 2).toInt();
 
   if (numAlarms > 1) {
     encender = server.arg(String("encender2"));
     apagar = server.arg(String("apagar2"));
-    horaEncender[1] = (byte)encender.substring(0, 3).toInt();
+    horaEncender[1] = (byte)encender.substring(0, 2).toInt();
     minutoEncender[1] = (byte)encender.substring(encender.length() - 2).toInt();
-    horaApagar[1] = (byte)apagar.substring(0, 3).toInt();
+    horaApagar[1] = (byte)apagar.substring(0, 2).toInt();
     minutoApagar[1] = (byte)apagar.substring(apagar.length() - 2).toInt();
   }
 
   if (numAlarms > 2) {
     encender = server.arg(String("encender3"));
     apagar = server.arg(String("apagar3"));
-    horaEncender[2] = (byte)encender.substring(0, 3).toInt();
+    horaEncender[2] = (byte)encender.substring(0, 2).toInt();
     minutoEncender[2] = (byte)encender.substring(encender.length() - 2).toInt();
-    horaApagar[2] = (byte)apagar.substring(0, 3).toInt();
+    horaApagar[2] = (byte)apagar.substring(0, 2).toInt();
     minutoApagar[2] = (byte)apagar.substring(apagar.length() - 2).toInt();
   }
 /*
   if (numAlarms > 3) {
     encender = server.arg(String("encender4"));
     apagar = server.arg(String("apagar4"));
-    horaEncender[3] = (byte)encender.substring(0, 3).toInt();
+    horaEncender[3] = (byte)encender.substring(0, 2).toInt();
     minutoEncender[3] = (byte)encender.substring(encender.length() - 2).toInt();
-    horaApagar[3] = (byte)apagar.substring(0, 3).toInt();
+    horaApagar[3] = (byte)apagar.substring(0, 2).toInt();
     minutoApagar[3] = (byte)apagar.substring(apagar.length() - 2).toInt();
   }
   if (numAlarms > 4) {
     encender = server.arg(String("encender5"));
     apagar = server.arg(String("apagar5"));
-    horaEncender[4] = (byte)encender.substring(0, 3).toInt();
+    horaEncender[4] = (byte)encender.substring(0, 2).toInt();
     minutoEncender[4] = (byte)encender.substring(encender.length() - 2).toInt();
-    horaApagar[4] = (byte)apagar.substring(0, 3).toInt();
+    horaApagar[4] = (byte)apagar.substring(0, 2).toInt();
     minutoApagar[4] = (byte)apagar.substring(apagar.length() - 2).toInt();
   }
 */
