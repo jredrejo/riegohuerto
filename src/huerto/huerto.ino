@@ -20,7 +20,7 @@
 
 #include <EEPROM.h>
 
-WiFiClient  cliente_wifi;
+WiFiClient cliente_wifi;
 
 #if (use_mqtt)
 PubSubClient mqtt_client(cliente_wifi);
@@ -35,13 +35,17 @@ WebServer server(80);
 
 unsigned long tiempoInicial;
 
+// Vigilancia no bloqueante del WiFi
+unsigned long ultimoChequeoWifi = 0;
+bool wifiConectadoPrev = false;
+
 // Temporizador de seguridad: garantiza que el riego no permanezca abierto
 // (HUERTO_PIN en LOW) más de MAX_RIEGO_MINUTOS minutos.
 AlarmID_t cierreSeguridad = dtINVALID_ALARM_ID;
 
 
 bool timeBetween(String curtime, String starttime, String endtime) {
-  return (((starttime < endtime) and (starttime <= curtime) and  (curtime < endtime)) or ((starttime >= endtime) and ((endtime > curtime) or (curtime >= starttime))));
+  return (((starttime < endtime) and (starttime <= curtime) and (curtime < endtime)) or ((starttime >= endtime) and ((endtime > curtime) or (curtime >= starttime))));
 }
 
 
@@ -50,7 +54,7 @@ void leerEEPROM() {
   numAlarms = EEPROM.read(0);
   if (numAlarms > 5) numAlarms = 0;
   for (int i = 1; i <= 5; i++) {
-    horaEncender[ i - 1] = EEPROM.read(i * 2 - 1);
+    horaEncender[i - 1] = EEPROM.read(i * 2 - 1);
     minutoEncender[i - 1] = EEPROM.read(i * 2);
     horaApagar[i - 1] = EEPROM.read(i * 2 + 9);
     minutoApagar[i - 1] = EEPROM.read(i * 2 + 10);
@@ -67,7 +71,7 @@ void escribirEEPROM() {
   // (11,12), (13,14) , (15,16), (17,18) , (19 ,20) son h:m de apagado
 
   for (int i = 1; i <= 5; i++) {
-    EEPROM.write(i * 2 - 1, horaEncender[ i - 1]);
+    EEPROM.write(i * 2 - 1, horaEncender[i - 1]);
     EEPROM.write(i * 2, minutoEncender[i - 1]);
     EEPROM.write(i * 2 + 9, horaApagar[i - 1]);
     EEPROM.write(i * 2 + 10, minutoApagar[i - 1]);
@@ -96,16 +100,14 @@ void cierraHuerto() {
   }
 }
 
-void printDigits(int digits)
-{
+void printDigits(int digits) {
   Serial.print(":");
   if (digits < 10)
     Serial.print('0');
   Serial.print(digits);
 }
 
-void digitalClockDisplay()
-{
+void digitalClockDisplay() {
   // digital clock display of the time
   Serial.print(hour());
   printDigits(minute());
@@ -129,7 +131,6 @@ void crearAlarmas() {
     Alarm.alarmRepeat((int)horaEncender[i], (int)minutoEncender[i], 0, abreHuerto);
     Alarm.alarmRepeat((int)horaApagar[i], (int)minutoApagar[i], 0, cierraHuerto);
   }
-
 }
 
 
@@ -143,25 +144,32 @@ void setup() {
 
   Serial.println("Conectando ");
 
-  if (LittleFS.begin())
-  {
+  if (LittleFS.begin()) {
     Serial.println("LittleFS Initialize....ok");
-  }
-  else
-  {
+  } else {
     Serial.println("LittleFS Initialization...failed");
   }
 
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);  // el stack del ESP32 reintenta en segundo plano
+  WiFi.persistent(true);
   WiFi.begin(ssid, password);
-   while (WiFi.status() != WL_CONNECTED)
-    { delay(1000);
-  
-      Serial.print(".");      // Escribiendo puntitos hasta que conecte
-    }
-    Serial.println("");
+  // Espera acotada: si en 20 s no hay WiFi, se continúa igualmente y el
+  // watchdog de loop() seguirá reintentando sin bloquear el dispositivo.
+  unsigned long inicioConexion = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - inicioConexion < 20000) {
+    delay(500);
+    Serial.print(".");  // Escribiendo puntitos hasta que conecte
+  }
+  Serial.println("");
+  if (WiFi.status() == WL_CONNECTED) {
+    wifiConectadoPrev = true;
     Serial.println("WiFi connected..!");
     Serial.print("Nuestra IP: ");
-    Serial.println(WiFi.localIP());   // Imprimir nuestra IP al conectar
+    Serial.println(WiFi.localIP());  // Imprimir nuestra IP al conectar
+  } else {
+    Serial.println("Sin WiFi al arrancar, se reintentara en segundo plano");
+  }
 
   /*
      Si no se usa wifiManager porque el essid y passwd de la wifi son fijos:
@@ -169,9 +177,11 @@ void setup() {
 
   Serial.println("Iniciado el servidor HTTP");
   timeClient.begin();
-  timeClient.setTimeOffset(7200); // GMT + 2
-  timeClient.update();
-  setTime(timeClient.getEpochTime());
+  timeClient.setTimeOffset(7200);  // GMT + 2
+  if (WiFi.status() == WL_CONNECTED) {
+    timeClient.update();
+    setTime(timeClient.getEpochTime());
+  }
   tiempoInicial = millis() + intervalo;  //para forzar una lectura en el primer loop
   leerEEPROM();
   crearAlarmas();
@@ -184,25 +194,21 @@ void setup() {
   server.on("/", handle_OnConnect);
   server.on("/SetHoras", HTTP_POST, handle_Parametros);
   server.on("/AbrirRiego", HTTP_GET, handle_AbrirRiego);
-  server.on("/CerrarRiego", HTTP_GET, handle_CerrarRiego);  
+  server.on("/CerrarRiego", HTTP_GET, handle_CerrarRiego);
   server.onNotFound(handleWebRequests);
   server.begin();
-
 }
 
-void handle_AbrirRiego()
-{
+void handle_AbrirRiego() {
   abreHuerto();
   server.send(200, "text/html", "<html><body><h2>Riego Abierto</h2><p><a href=\"/\">Volver a la p&aacute;gina principal</a></p></body></html>");
 }
-void handle_CerrarRiego()
-{
+void handle_CerrarRiego() {
   cierraHuerto();
   server.send(200, "text/html", "<html><body><h2>Riego Cerrado</h2><p><a href=\"/\">Volver a la p&aacute;gina principal</a></p></body></html>");
 }
 
-void handle_Parametros()
-{
+void handle_Parametros() {
   String encender;
   String apagar;
 
@@ -210,7 +216,6 @@ void handle_Parametros()
 
     server.send(200, "text/plain", "No se ha recibido nada");
     return;
-
   }
 
   // mostrar por puerto serie
@@ -248,7 +253,7 @@ void handle_Parametros()
     horaApagar[2] = (byte)apagar.substring(0, 2).toInt();
     minutoApagar[2] = (byte)apagar.substring(apagar.length() - 2).toInt();
   }
-/*
+  /*
   if (numAlarms > 3) {
     encender = server.arg(String("encender4"));
     apagar = server.arg(String("apagar4"));
@@ -269,17 +274,14 @@ void handle_Parametros()
   crearAlarmas();
   escribirEEPROM();
   server.sendHeader("Location", String("/index.html"), true);
-  server.send( 302, "text/plain", "");
-
+  server.send(302, "text/plain", "");
 }
 
-void handle_NotFound()
-{
+void handle_NotFound() {
   server.send(404, "text/plain", "Lo que has intentado no existe");
 }
 
-void handle_OnConnect()
-{
+void handle_OnConnect() {
   String row;
   String ptr = "<!DOCTYPE html> <html>\n";
   ptr += "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n";
@@ -293,16 +295,16 @@ void handle_OnConnect()
   ptr += "<body>\n";
   ptr += "<h1>Nodo Huerto El Olivo</h1>\n";
   ptr += "<div>\n";
-  ptr += "<h3>" +  timeClient.getFormattedTime() + "</h3>\n";
+  ptr += "<h3>" + timeClient.getFormattedTime() + "</h3>\n";
   ptr += "<hr/>\n";
   String estadoRiego = (digitalRead(HUERTO_PIN) == LOW) ? "Riego Abierto" : "Riego Cerrado";
   ptr += "<h2>" + estadoRiego + "</h2>\n";
   ptr += "<div>\n";
   ptr += "<h2>Periodos de riego activos</h2>\n";
-  
-  ptr += "<table>\n"; 
+
+  ptr += "<table>\n";
   for (int i = 0; i < numAlarms; i++) {
-    row = "<tr><td>De " + String(horaEncender[i]) + ":" + String(minutoEncender[i]) + "</td><td>A "+ String(horaApagar[i]) + ":" + String(minutoApagar[i]) + "</td></tr>";
+    row = "<tr><td>De " + String(horaEncender[i]) + ":" + String(minutoEncender[i]) + "</td><td>A " + String(horaApagar[i]) + ":" + String(minutoApagar[i]) + "</td></tr>";
     ptr += row;
   }
   ptr += "</table>\n";
@@ -319,19 +321,18 @@ void handle_OnConnect()
   ptr += "<form action=\"/CerrarRiego\" method=\"get\">";
   ptr += "<button type=\"submit\">Cerrar riego</button>";
   ptr += "</form>";
-  
+
   ptr += "</body>\n";
   ptr += "</html>\n";
 
   server.send(200, "text/html", ptr);
-//  server.sendHeader("Location", "/index.html", true);  //Redirect to our html web page
-//  server.send(302, "text/plane", "");
+  //  server.sendHeader("Location", "/index.html", true);  //Redirect to our html web page
+  //  server.send(302, "text/plane", "");
 }
 
 void handleWebRequests() {
   if (loadFromSpiffs(server.uri())) return;
   handle_NotFound();
-
 }
 
 
@@ -365,7 +366,7 @@ bool loadFromSpiffs(String path) {
 #if (use_mqtt)
 void mqtt_reconnect() {
   int intentos = 0;
-  const int max_intentos = 2; // no intentarlo más de estas veces
+  const int max_intentos = 2;  // no intentarlo más de estas veces
   // bucle intentando conectar:
   while (!mqtt_client.connected() && intentos <= max_intentos) {
     Serial.print("Intentando conexión MQTT...");
@@ -384,7 +385,31 @@ void mqtt_reconnect() {
 }
 #endif
 
+// Vigila el WiFi sin bloquear: comprueba el estado cada intervaloWifi ms y, si
+// se ha caído, lanza una reconexión (que vuelve enseguida). Al recuperarlo,
+// re-sincroniza la hora por NTP.
+void mantenerWifi() {
+  if (millis() - ultimoChequeoWifi < intervaloWifi) return;
+  ultimoChequeoWifi = millis();
+
+  bool conectado = (WiFi.status() == WL_CONNECTED);
+
+  if (!conectado) {
+    Serial.println("WiFi perdido. Reconectando (no bloqueante)...");
+    WiFi.disconnect();
+    WiFi.reconnect();  // dispara la reconexión y vuelve enseguida
+  } else if (!wifiConectadoPrev) {
+    // Acabamos de recuperar el WiFi: re-sincronizar la hora
+    Serial.print("WiFi recuperado. IP: ");
+    Serial.println(WiFi.localIP());
+    timeClient.update();
+    setTime(timeClient.getEpochTime());
+  }
+  wifiConectadoPrev = conectado;
+}
+
 void loop() {
+  mantenerWifi();
   server.handleClient();
   Alarm.delay(10);
 
@@ -404,8 +429,5 @@ void loop() {
     Serial.println(msg);
     mqtt_client.publish(tema, msg);
 #endif
-
-
   }
-
 }
