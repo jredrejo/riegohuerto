@@ -21,6 +21,9 @@ const int HUERTO_PIN = D1;
 // Pasado este tiempo se cierra automáticamente como medida de seguridad.
 const int MAX_RIEGO_MINUTOS = 30;
 
+
+const unsigned long intervaloWifi = 15000; // comprobar WiFi cada 15 s
+
 // Cada cuando se envían los datos a la nube
 unsigned long intervalo = 30000; // 30 seg
 const char* htmlfile = "/index.html";
