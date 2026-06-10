@@ -34,6 +34,10 @@ ESP8266WebServer server(80);
 
 unsigned long tiempoInicial;
 
+// Temporizador de seguridad: garantiza que el riego no permanezca abierto
+// (HUERTO_PIN en LOW) más de MAX_RIEGO_MINUTOS minutos.
+AlarmID_t cierreSeguridad = dtINVALID_ALARM_ID;
+
 
 bool timeBetween(String curtime, String starttime, String endtime) {
   return (((starttime < endtime) and (starttime <= curtime) and  (curtime < endtime)) or ((starttime >= endtime) and ((endtime > curtime) or (curtime >= starttime))));
@@ -73,10 +77,21 @@ void escribirEEPROM() {
 void abreHuerto() {
   Serial.println("Abriendo riego en el huerto");
   digitalWrite(HUERTO_PIN, LOW);
+  // (Re)programar el cierre de seguridad: como muy tarde se cerrará dentro
+  // de MAX_RIEGO_MINUTOS minutos aunque no haya alarma de apagado.
+  if (cierreSeguridad != dtINVALID_ALARM_ID) {
+    Alarm.free(cierreSeguridad);
+  }
+  cierreSeguridad = Alarm.timerOnce(0, MAX_RIEGO_MINUTOS, 0, cierraHuerto);
 }
 void cierraHuerto() {
   Serial.println("CERRANDO riego en el huerto");
   digitalWrite(HUERTO_PIN, HIGH);
+  // Cancelar el cierre de seguridad pendiente, si lo hubiera.
+  if (cierreSeguridad != dtINVALID_ALARM_ID) {
+    Alarm.free(cierreSeguridad);
+    cierreSeguridad = dtINVALID_ALARM_ID;
+  }
 }
 
 void printDigits(int digits)

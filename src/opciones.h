@@ -17,6 +17,10 @@ byte minutoApagar[5];
 // pin electroválvula huerto
 const int HUERTO_PIN = D1;
 
+// Tiempo máximo (en minutos) que el riego puede estar abierto (pin en LOW).
+// Pasado este tiempo se cierra automáticamente como medida de seguridad.
+const int MAX_RIEGO_MINUTOS = 30;
+
 // Cada cuando se envían los datos a la nube
 unsigned long intervalo = 30000; // 30 seg
 const char* htmlfile = "/index.html";
